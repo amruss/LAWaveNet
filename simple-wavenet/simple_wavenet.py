@@ -30,11 +30,18 @@ class SimpleWavenet(object):
 
         self.filter_width = 2
 
+        self.inputs = tf.placeholder(tf.float32,
+                                shape=(None, num_time_samples, num_channels))
+        targets = tf.placeholder(tf.int32, shape=(None, num_time_samples))
 
-    def get_loss_function(self, labels, output):
-        predictions = self.calculate_prediction(output)
-        loss = tf.losses.mean_squared_error(labels, predictions)
-        return loss
+
+    def get_loss_function(self):
+        return tf.losses.mean_squared_error
+
+    def initial_loss_function(self, target, name='loss'):
+        with tf.name_scope(name):
+            prediction = self.calculate_prediction()
+
 
     def calculate_prediction(self, network_output):
         return np.argmax(network_output) #TODO: check the format of the output vector (aka, is it batched?)
@@ -67,7 +74,8 @@ class SimpleWavenet(object):
             #softmax
             #TODO: Do I have to do preprocessing ln(1+mu*x)/ln(1+mu)??
             output = tf.softmax(skip_conv_2)
-        return output
+        prediction = np.argmax(output)
+        return prediction
 
     def convolutional_layer(self):
         pass
@@ -152,10 +160,3 @@ class SimpleWavenet(object):
 
         #do convolution
         return tf.nn.conv1d(inputs, filter_weights, stride=1, padding='VALID')
-
-    def create_final_layer(self): #TODO ABBEY
-        # Linear + Softmax
-
-        #outputs = _output_linear(h)
-        #ut_ops = [tf.nn.softmax(outputs)]
-        pass
