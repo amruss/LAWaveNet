@@ -4,6 +4,7 @@ from scipy.io import wavfile
 import numpy as np
 
 
+
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--model', type=str, default="simple-wavenet")
 argparser.add_argument('--learning_rate', type=float, default=0.0005)
@@ -12,7 +13,7 @@ argparser.add_argument('--layers', type=int, default=2)
 argparser.add_argument('--data_directory', type=str, default="fma_small_wav/015/electronic_noises/")
 args = argparser.parse_args()
 
-
+#TODO: test code
 def make_dataset(data_directory):
     inputs = []
     targets = []
@@ -38,7 +39,8 @@ def make_dataset(data_directory):
 
     return inputs, targets
 
-
+def train():
+    pass
 
 if __name__ == "__main__":
     make_dataset(args.data_directory)
