@@ -22,6 +22,10 @@ class SimpleWavenet(object):
         #TODO: calculate predictions (is probably max of softmax)
         loss = tf.losses.mean_squared_error(lables, predictions)
 
+    def calculate_prediction(self, network_output):
+        return np.argmax(network_output) #TODO: check the format of the output vector (aka, is it batched?)
+
+
     #TODO: This probs should take in more params
     def create_network(self):
         #Initialize?
@@ -30,9 +34,9 @@ class SimpleWavenet(object):
         next_input = self.create_causal_layer(layer_input, filter_width, n_residual_channels)
         #for each dilation layer
         with tf.name_scope('dilation_layers'):
-            for i in range(DILATION_LAYERS):
+            for i in range(len(self.dilations)): #TODO: check this
                 layer_num = i
-                dilation = DILATION_LAYERS[i]
+                dilation = self.dilations[layer_num][i] #todo: layer number
                 #create new dilation layer with previous outputs as inputs
                 #get list of skips
                 skip_connection, next_input = self.create_dilation_layer(next_input)
@@ -80,7 +84,7 @@ class SimpleWavenet(object):
         #create scope
         with tf.name_scope(name):
             #determine shape
-            shape = [filter_width, 1, n_residual_channels]
+            shape = [dialation, 1, n_residual_channels]
 
             #create layer & layer variable
             init = tf.contrib.layers.xavier_initializer_conv2d()
@@ -96,6 +100,7 @@ class SimpleWavenet(object):
             #do convolution
             #NOTE: I think passing in dilation_rate should be fine, but unsure
             return tf.nn.conv1d(new_input, filter_weights, stride=1, padding='VALID', dilation_rate=dialation)
+
     def create_dilation_layer(self,
                             layer_input,
                             dilation_size,
@@ -116,11 +121,7 @@ class SimpleWavenet(object):
                                               dilation_size,
                                               self.residual_channels,
                                               )
-            #NOTE: ABBEY, I could be wrong, but shouldn't you be passing
-            #in the same params here as above to convolutional_layer...
-            #I've written what I think is write, feel free to change
-            #convolutional_gate = self.convolutional_layer()
-            convolutional_filter = self.dilated_conv(layer_input,
+            convolutional_gate = self.dilated_conv(layer_input,
                                               dilation_size,
                                               self.residual_channels,
                                               )
@@ -149,3 +150,10 @@ class SimpleWavenet(object):
 
         #do convolution
         return tf.nn.conv1d(inputs, filter_weights, stride=1, padding='VALID')
+
+    def create_final_layer(self): #TODO ABBEY
+        # Linear + Softmax
+
+        #outputs = _output_linear(h)
+        ut_ops = [tf.nn.softmax(outputs)]
+        pass
