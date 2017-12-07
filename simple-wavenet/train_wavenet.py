@@ -2,16 +2,25 @@ import argparse
 import os
 from scipy.io import wavfile
 import numpy as np
-
+import tensorflow as tf
+from simple_wavenet.py import SimpleWavenet
+from tqdm import tqdm
 
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--model', type=str, default="simple-wavenet")
-argparser.add_argument('--learning_rate', type=float, default=0.0005)
+argparser.add_argument('--learning_rate', type=float, default=1e-5)
 argparser.add_argument('--iterations', type=int, default=10000)
 argparser.add_argument('--layers', type=int, default=2)
+argparser.add_argument('--momentum', type=float, default=0.9)
 argparser.add_argument('--data_directory', type=str, default="fma_small_wav/015/electronic_noises/")
 args = argparser.parse_args()
+
+
+DILATIONS =  [1, 2, 4, 8, 16]
+
+
+
 
 #TODO: test code
 def make_dataset(data_directory):
@@ -39,10 +48,23 @@ def make_dataset(data_directory):
 
     return inputs, targets
 
-def train():
-    pass
+def train(model, inputs, targets):
+    optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate, epsilon=1e-4) #TODO: use momentum
+    trainable = tf.trainable_variables()
+    loss = model.loss()
+    grad_update = optimizer.minimize(loss, var_list=trainable)
+
+    for epoch in tqdm(range(1, args.iterations + 1)):
+        index = epoch % len(inputs)
+        input = inputs[index]
+        target = targets[index]
+
+
 
 if __name__ == "__main__":
-    make_dataset(args.data_directory)
+    inputs, targets = make_dataset(args.data_directory)
+    sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
+    wavenet = SimpleWavenet(1, 2, DILATIONS)
+    train(wavenet, inputs, targets)
 
 

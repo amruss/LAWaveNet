@@ -157,5 +157,5 @@ class SimpleWavenet(object):
         # Linear + Softmax
 
         #outputs = _output_linear(h)
-        ut_ops = [tf.nn.softmax(outputs)]
+        #ut_ops = [tf.nn.softmax(outputs)]
         pass
