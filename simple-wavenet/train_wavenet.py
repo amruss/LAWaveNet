@@ -1,10 +1,13 @@
 import argparse
 import os
-from scipy.io import wavfile
+
 import numpy as np
 import tensorflow as tf
-from simple_wavenet.py import SimpleWavenet
+from scipy.io import wavfile
 from tqdm import tqdm
+
+from simple_wavenet import SimpleWavenet
+
 import matplotlib.pyplot as plt
 
 
@@ -47,9 +50,6 @@ def make_dataset(data_directory):
         targets.append(y_s)
 
     return inputs, targets
-
-def save_model(model, filename):
-    pass
 
 def train(model, inputs, targets, session):
     saver = tf.train.Saver()
