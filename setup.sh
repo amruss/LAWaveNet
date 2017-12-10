@@ -67,7 +67,9 @@ sudo tar -xf ffmpeg-git-64bit-static.tar.xz
 sudo rm ffmpeg-git-64bit-static.tar.xz
 sudo ln -s /opt/ffmpeg*/ff* /usr/bin
 echo "Installing youtube-dl"
-sudo apt-get install youtube-dl
+sudo wget https://yt-dl.org/latest/youtube-dl -O /usr/local/bin/youtube-dl
+sudo chmod a+x /usr/local/bin/youtube-dl
+hash -r
 
 echo "Updating dask"
 sudo env PATH=$PATH `which pip`  install dask --upgrade
