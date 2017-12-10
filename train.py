@@ -262,8 +262,8 @@ def main():
                     learning_rate=args.learning_rate,
                     momentum=args.momentum)
     trainable = tf.trainable_variables()
-    if wavenet_params["gradient_clipping"]:
-        gvs = optimizer.compute_gradients(loss)
+    if args.gradient_clipping:
+        gvs = optimizer.compute_gradients(loss, trainable)
         capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
         optimizer.apply_gradients(capped_gvs)
 
