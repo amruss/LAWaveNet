@@ -263,8 +263,12 @@ def main():
                     momentum=args.momentum)
     trainable = tf.trainable_variables()
     if args.gradient_clipping:
+        def clip_if_not_none(grad):
+            if not grad is None:
+                return tf.clip_by_value(grad, -1., 1.)
+            return grad
         gvs = optimizer.compute_gradients(loss, trainable)
-        capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
+        capped_gvs = [(clip_if_not_none(grad), var) for grad, var in gvs]
         optimizer.apply_gradients(capped_gvs)
 
     optim = optimizer.minimize(loss, var_list=trainable)
