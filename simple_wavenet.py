@@ -6,7 +6,7 @@ import math
 #########Variables################
 # dilation_channels: How many filters to learn for the dilated convolution.
 #################################
-
+SEQUENCE_LENGTH = 32
 
 class SimpleWavenet(object):
     def __init__(self, batch_size, dilation_width,
@@ -23,17 +23,15 @@ class SimpleWavenet(object):
 
 
         self.batch_size = batch_size
-        self.dilations = [[dilation_width**i for i in range(len(n))] for n in dilation_layer_widths]
+        self.dilations = dilation_layer_widths #[[dilation_width**i for i in range(n)] for n in dilation_layer_widths]
         self.dilation_channels = dilation_channels
         self.residual_channels = residual_channels
         self.skip_channels =  skip_channels
 
         self.filter_width = 2
-
-        self.inputs = tf.placeholder(tf.float32,
-                                shape=(None, num_time_samples, num_channels))
-        targets = tf.placeholder(tf.int32, shape=(None, num_time_samples))
-
+        self.x_placeholder = tf.placeholder('float32', [SEQUENCE_LENGTH, 1])
+        self.y_placeholder = tf.placeholder('float32', [1, 1])
+        self.create_network(self.x_placeholder)
 
     def get_loss_function(self):
         return tf.losses.mean_squared_error
@@ -42,12 +40,16 @@ class SimpleWavenet(object):
         with tf.name_scope(name):
             prediction = self.calculate_prediction()
 
+    def loss(self):
+        return self.get_loss_function()
 
     def calculate_prediction(self, network_output):
         return np.argmax(network_output) #TODO: check the format of the output vector (aka, is it batched?)
 
 
     def create_network(self, network_input):
+        initializer = tf.contrib.layers.xavier_initializer_conv2d()
+        network_input = tf.reshape(tf.cast(network_input, tf.float32), [self.batch_size, -1, 1])
         #Initialize
         skip_connections = []
         #create causal layer
@@ -64,23 +66,29 @@ class SimpleWavenet(object):
             #sum skips
             skip_sum = tf.add_n(skip_connections)
             #apply relu
-            skip_relu_1 = tf.relu(skip_sum)
+            skip_relu_1 = tf.nn.relu(skip_sum)
             #1x1 convolutional filter
-            skip_conv_1 = self.create_1x1_conv_layer(skip_relu_1, 1)
+            skip_density_1 = tf.Variable(initializer(shape=[1, self.skip_channels, self.skip_channels]), name="skip_1")
+            skip_conv_1 = tf.nn.conv1d(skip_relu_1, skip_density_1, stride=1, padding='VALID')
             #apply relu
-            skip_relu_2 = tf.relu(skip_conv_1)
+            skip_relu_2 = tf.nn.relu(skip_conv_1)
             #1x1 convolutional filter
-            skip_conv_2 = self.create_1x1_conv_layer(skip_relu_2, 2)
+            skip_density_2 = tf.Variable(initializer(shape=[1, self.skip_channels, 1]), name="skip_2")
+            skip_conv_2 = tf.nn.conv1d(skip_relu_2, skip_density_2, stride=1, padding='VALID')
             #softmax
             #TODO: Do I have to do preprocessing ln(1+mu*x)/ln(1+mu)??
-            output = tf.softmax(skip_conv_2)
+            output = tf.nn.softmax(skip_conv_2)
         prediction = np.argmax(output)
         return prediction
+
 
     def convolutional_layer(self):
         pass
 
-    def create_causal_layer(layer_input, filter_width, n_residual_channels):
+    def variables(self, ):
+        pass
+
+    def create_causal_layer(self, layer_input, filter_width, n_residual_channels):
         #create scope
         with tf.name_scope('causal_convolution'):
             #determine shape
@@ -100,7 +108,7 @@ class SimpleWavenet(object):
             #do convolution
         return tf.nn.conv1d(new_input, filter_weights, stride=1, padding='VALID')
 
-    def dialated_convolution(layer_input, dilation_filter, dilation, name):
+    def dialated_convolution(self, layer_input, dilation_filter, dilation, name):
         #create scope
         with tf.name_scope(name):
             #pad dialation to input
@@ -108,14 +116,19 @@ class SimpleWavenet(object):
             padded_input = tf.pad(layer_input, padding)
 
             #Convert to dilated sequence: unsure if necessary
-            # padded_shape = shape = tf.shape(padded_input)
-            # pad_elements = dilation - 1 - (shape[1] + dilation - 1) % dilation
-            # padded = tf.pad(padded_input, [[0, 0], [pad_elements, 0], [0, 0]])
-            # reshaped = tf.reshape(padded, [-1, dilation, shape[2]])
-            # transposed = tf.transpose(reshaped, perm=[1, 0, 2])
-            # dilated_sequence = tf.reshape(transposed, [shape[0] * dilation, -1, shape[2]])
+            padded_shape = shape = tf.shape(padded_input)
+            pad_elements = dilation - 1 - (shape[1] + dilation - 1) % dilation
+            padded = tf.pad(padded_input, [[0, 0], [pad_elements, 0], [0, 0]])
+            reshaped = tf.reshape(padded, [-1, dilation, shape[2]])
+            transposed = tf.transpose(reshaped, perm=[1, 0, 2])
+            dilated_sequence = tf.reshape(transposed, [shape[0] * dilation, -1, shape[2]])
 
-            return tf.nn.conv1d(padded_input, dilation_filter, stride=1, padding='VALID', dilation_rate=dilation)
+            layer_output = tf.nn.conv1d(dilated_sequence, dilation_filter, stride=1, padding='VALID')
+
+            shape = tf.shape(layer_output)
+            prepared = tf.reshape(layer_output, [dilation, -1, shape[2]])
+            transposed = tf.transpose(prepared, perm=[1, 0, 2])
+            return tf.reshape(transposed, [tf.div(shape[0], dilation), -1, shape[2]])
 
     def create_dilation_layer(self,
                             layer_input,
@@ -128,16 +141,18 @@ class SimpleWavenet(object):
             gate_weights = tf.Variable(init(shape=shape), "GateWeightL{}".format(layer_num))
             filter_weights = tf.Variable(init(shape=shape), "FilterWeightL{}".format(layer_num))
 
-            convolutional_filter = self.dilated_conv(layer_input,
+            convolutional_filter = self.dialated_convolution(layer_input,
                                                      filter_weights,
                                                      dilation_size,
+                                                     "conv_filter",
                                               )
-            convolutional_gate = self.dilated_conv(layer_input,
+            convolutional_gate = self.dialated_convolution(layer_input,
                                                    gate_weights,
                                                    dilation_size,
+                                                   "conv_gate",
                                               )
 
-            output = tf.mul(tf.tanh(convolutional_filter), tf.sigmoid(convolutional_gate)) #TODO: check multiply or add? seen it both ways
+            output =  tf.multiply(tf.tanh(convolutional_filter), tf.sigmoid(convolutional_gate)) #TODO: check multiply or add? seen it both ways
 
             # Need to split into output for the skip channel and the normal channel
             output_shape = [1, self.dilation_channels, self.skip_channels]
@@ -148,7 +163,7 @@ class SimpleWavenet(object):
             dense_output = dense_output + layer_input
 
             # Skipped channel
-            skipped_output = self.nn.conv1d(output, skip_weight, stride=1, padding='VALID')
+            skipped_output = tf.nn.conv1d(output, skip_weight, stride=1, padding='VALID')
 
             return skipped_output, dense_output
 

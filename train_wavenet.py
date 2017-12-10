@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from simple_wavenet import SimpleWavenet
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 argparser = argparse.ArgumentParser()
@@ -69,8 +69,9 @@ def train(model, inputs, targets, session):
         if epoch % 50 == 0:
             print "Loss for iteration " + str(epoch) + " is " + str(cost)
         if epoch % 250 ==0:
-            plt.plot(losses)
-            plt.show()
+            # plt.plot(losses)
+            # plt.show()
+            pass
         if epoch % args.save_every == 0:
             #source: https://stackoverflow.com/questions/33759623/tensorflow-how-to-save-restore-a-model
             saver.save(sess, args.model_name, global_step=epoch)
@@ -83,5 +84,4 @@ if __name__ == "__main__":
     sess.run(tf.initialize_all_variables())
     wavenet = SimpleWavenet(1, 2, DILATIONS)
     train(wavenet, inputs, targets, sess)
-
 
