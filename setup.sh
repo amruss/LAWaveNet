@@ -57,8 +57,6 @@ sudo chown -R ubuntu:ubuntu .
 # Install ffprobe/ffmpeg for youtube-dl
 # http://ftrack.rtd.ftrack.com/en/3.3.9/administering/managing_local_installation/configuring_ffmpeg.html
 # https://www.johnvansickle.com/ffmpeg/
-echo "Exporting Library Path"
-export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64
 
 echo "Installing ffprobe"
 cd /opt
@@ -78,3 +76,7 @@ echo "Getting dataset of 4 hours of classical piano music"
 mkdir -p ~/data/wavenet_corpus
 cd ~/data/wavenet_corpus
 youtube-dl --extract-audio --audio-format wav https://www.youtube.com/watch?v=EhO_MrRfftU
+
+echo "Exporting Library Path"
+cd ~/src/tensorflow-wavenet
+export LD_LIBRARY_PATH=/usr/local/cuda-8.0/lib64
