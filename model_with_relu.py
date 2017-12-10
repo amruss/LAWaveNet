@@ -13,7 +13,7 @@ def create_variable(name, shape):
 
 
 def create_embedding_table(name, shape):
-    if shape[0] == shape[1]:
+    if shape[0] == sxhape[1]:
         # Make a one-hot encoding as the initial value.
         initial_val = np.identity(n=shape[0], dtype=np.float32)
         return tf.Variable(initial_val, name=name)
@@ -435,11 +435,13 @@ class WaveNetModel(object):
             # We skip connections from the outputs of each layer, adding them
             # all up here.
             total = sum(outputs)
-            transformed1 = tf.nn.relu(total)
+            #transformed1 = tf.nn.relu(total)
+            transformed1 = relu(total, ALPHA, name=scope.name)
             conv1 = tf.nn.conv1d(transformed1, w1, stride=1, padding="SAME")
             if self.use_biases:
-                conv1 = tf.add(conv1, b1)
-            transformed2 = tf.nn.relu(conv1)
+                conv1 = tf.add(conv1, b1)    
+            #transformed2 = tf.nn.relu(conv1)
+            transformed2 = relu(conv1, ALPHA, name=scope.name)
             conv2 = tf.nn.conv1d(transformed2, w2, stride=1, padding="SAME")
             if self.use_biases:
                 conv2 = tf.add(conv2, b2)
