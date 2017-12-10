@@ -29,19 +29,32 @@ class SimpleWavenet(object):
         self.skip_channels =  skip_channels
 
         self.filter_width = 2
-        self.x_placeholder = tf.placeholder('float32', [SEQUENCE_LENGTH, 1])
-        self.y_placeholder = tf.placeholder('float32', [1, 1])
-        self.create_network(self.x_placeholder)
+        x_placeholder = tf.placeholder('float32', [SEQUENCE_LENGTH, 1])
+        y_placeholder = tf.placeholder('float32', [1, 1])
 
-    def get_loss_function(self):
-        return tf.losses.mean_squared_error
+        self.inputs = x_placeholder
+        self.targets = y_placeholder
 
-    def initial_loss_function(self, target, name='loss'):
-        with tf.name_scope(name):
-            prediction = self.calculate_prediction()
+        self.predict = self.init_predict(self.inputs)
+        self.loss_func = self.init_loss(self.targets)
+
+    def pred(self):
+        return self.predict
 
     def loss(self):
-        return self.get_loss_function()
+        return self.loss_func
+
+    def init_predict(self, x):
+        x = tf.reshape(tf.cast(x, tf.float32), [self.batch_size, -1, 1])
+        out = self.create_network(x)
+        #out = tf.reshape(tf.slice(tf.reshape(out, [-1]), begin=[tf.shape(out)[1] - 1], size=[1]), [-1, 1])
+        return out #self.calculate_prediction(out)
+
+    def init_loss(self, y, name='loss'):
+        with tf.name_scope(name):
+            out = self.pred()
+            reduced_loss = tf.reduce_sum(tf.square(tf.subtract(out, y)))
+            return reduced_loss
 
     def calculate_prediction(self, network_output):
         return np.argmax(network_output) #TODO: check the format of the output vector (aka, is it batched?)
@@ -78,8 +91,7 @@ class SimpleWavenet(object):
             #softmax
             #TODO: Do I have to do preprocessing ln(1+mu*x)/ln(1+mu)??
             output = tf.nn.softmax(skip_conv_2)
-        prediction = np.argmax(output)
-        return prediction
+        return output
 
 
     def convolutional_layer(self):
