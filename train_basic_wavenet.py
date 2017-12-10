@@ -23,14 +23,6 @@ argparser.add_argument('--data_directory', type=str, default="fma_small_wav/015/
 args = argparser.parse_args()
 
 
-def _train(model, inputs, targets):
-    feed_dict = {model.inputs: inputs, model.targets: targets}
-    cost, _ = model.sess.run(
-        [model.cost, model.train_step],
-        feed_dict=feed_dict)
-    return cost
-
-
 def train(model, inputs, targets):
     losses = []
     for i in tqdm(range(args.iterations)):
@@ -42,8 +34,6 @@ def train(model, inputs, targets):
         losses.append(loss)
         print loss
 
-
-            
 
 def make_dataset(data_directory):
     inputs = []
@@ -78,7 +68,6 @@ if __name__ == "__main__":
     x_placeholder = tf.placeholder(tf.float32,
                             shape=(None, num_time_samples, num_channels))
     y_placeholder = tf.placeholder(tf.int32, [None, num_time_samples])
-    wavenet = BasicWavenet(
-                            x_placeholder, y_placeholder,
-                             num_time_samples=num_time_samples)
+    wavenet = BasicWavenet(x_placeholder, y_placeholder,
+                           num_time_samples=num_time_samples)
     train(wavenet, inputs, targets)

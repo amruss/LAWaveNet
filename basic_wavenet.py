@@ -9,16 +9,13 @@ import math
 
 class BasicWavenet(object):
     def __init__(self, x_placeholder, y_placeholder,
-                 num_time_samples,
                  num_classes=256,
-                 num_channels=1,
                  num_layers=2,
                  num_hidden=128,
-                 gpu_fraction=1.0):
+                 ):
 
         inputs = x_placeholder
         targets = y_placeholder
-
 
         layer_input = inputs
         init = tf.contrib.layers.xavier_initializer_conv2d()
@@ -29,12 +26,11 @@ class BasicWavenet(object):
             rate = 2**l
             name_f = 'layer{}filter'.format(l)
             name_g = 'layer{}gate'.format(l)
-            filter_input = self.dilated_conv1d(layer_input, num_hidden, rate=rate, name=name_f)
-            gate_input = self.dilated_conv1d(layer_input, num_hidden, rate=rate, name=name_g)
+            filter_input = self.create_dilated_conv1d(layer_input, num_hidden, rate=rate, name=name_f)
+            gate_input = self.create_dilated_conv1d(layer_input, num_hidden, rate=rate, name=name_g)
             layer_output = tf.multiply(tf.tanh(filter_input), tf.sigmoid(gate_input))
 
             # Need to split into output for the skip channel and the normal channel
-
             output_shape = [1, num_hidden, num_hidden]
             dense_weight = tf.get_variable(shape=output_shape, initializer=init, name="DenseWeightL{}".format(l))
             skip_weight = tf.get_variable(shape=output_shape, initializer=init, name="SkipWeightL{}".format(l))
@@ -119,11 +115,8 @@ class BasicWavenet(object):
                activation=tf.nn.relu,
                ):
         in_channels = inputs.get_shape().as_list()[-1]
-
         stddev = gain / np.sqrt(filter_width ** 2 * in_channels)
-        #TODO: use xavier intializer?
-        w_init = tf.random_normal_initializer(stddev=stddev)
-
+        w_init = tf.contrib.layers.xavier_initializer_conv2d(stddev=stddev)
         w = tf.get_variable(name='w',
                             shape=(filter_width, in_channels, out_channels),
                             initializer=w_init)
@@ -139,7 +132,7 @@ class BasicWavenet(object):
         return outputs
 
 
-    def dilated_conv1d(self, inputs,
+    def create_dilated_conv1d(self, inputs,
                        out_channels,
                        filter_width=2,
                        rate=1,
