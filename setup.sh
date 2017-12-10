@@ -71,3 +71,8 @@ sudo apt-get install youtube-dl
 
 echo "Updating dask"
 sudo env PATH=$PATH `which pip`  install dask --upgrade
+
+echo "Getting dataset of 4 hours of classical piano music"
+mkdir -p ~/data/wavenet_corpus
+cd ~/data/wavenet_corpus
+youtube-dl --extract-audio --audio-format wav https://www.youtube.com/watch?v=EhO_MrRfftU
