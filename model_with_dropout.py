@@ -309,7 +309,7 @@ class WaveNetModel(object):
 
         if self.dropout:
             #NOTE: added dropout here
-            keep_prob = tf.placeholder(tf.float32)
+            keep_prob = tf.constant(0.9)
             transformed_with_dropout = tf.nn.dropout(tformed, keep_prob)
             transformed = transformed_with_dropout
         else:
