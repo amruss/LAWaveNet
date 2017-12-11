@@ -22,6 +22,7 @@ argparser.add_argument('--data_directory', type=str, default="fma_small_wav/015/
 argparser.add_argument('--log_directory', type=str, default="test_model/")
 argparser.add_argument('--max_checkpoints', type=int, default=100)
 argparser.add_argument('--checkpoint_every', type=int, default=100)
+argparser.add_argument('--num_time_samples', type=int, default=1000000)
 args = argparser.parse_args()
 
 
@@ -70,14 +71,18 @@ def make_dataset(data_directory):
         x_s = np.digitize(data_normalized[0:-1], np.linspace(-1, 1, 256), right=False) - 1
         x_s = np.linspace(-1, 1, 256)[x_s][None, :, None]
         y_s = (np.digitize(data_normalized[1::], np.linspace(-1, 1, 256), right=False) - 1)[None, :]
-        inputs.append(x_s)
-        targets.append(y_s)
+        for i in range (x_s.shape[1]/args.num_time_samples):
+            begin = args.num_time_samples * i
+            end = args.num_time_samples * i + args.num_time_samples
+            inputs.append(x_s[:, begin:end, :])
+            targets.append(y_s[:, begin:end])
 
     return inputs, targets
 
 if __name__ == "__main__":
     inputs, targets = make_dataset(args.data_directory)
     num_time_samples = inputs[0].shape[1]
+    print num_time_samples
     num_channels = 1
     gpu_fraction = 1.0
 
