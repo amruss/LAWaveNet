@@ -62,7 +62,7 @@ class BasicWavenet(object):
 
         gpu_options = tf.GPUOptions(
             per_process_gpu_memory_fraction=1.0)
-        sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+        sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False))
         sess.run(tf.initialize_all_variables())
 
         self.inputs = inputs
@@ -115,8 +115,7 @@ class BasicWavenet(object):
                activation=tf.nn.relu,
                ):
         in_channels = inputs.get_shape().as_list()[-1]
-        stddev = gain / np.sqrt(filter_width ** 2 * in_channels)
-        w_init = tf.contrib.layers.xavier_initializer_conv2d(stddev=stddev)
+        w_init = tf.contrib.layers.xavier_initializer_conv2d()
         w = tf.get_variable(name='w',
                             shape=(filter_width, in_channels, out_channels),
                             initializer=w_init)

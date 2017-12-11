@@ -5,11 +5,9 @@ import numpy as np
 import tensorflow as tf
 from scipy.io import wavfile
 from tqdm import tqdm
+import sys
 
 from basic_wavenet import BasicWavenet
-
-#import matplotlib.pyplot as plt
-
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('model_name', type=str, default="tester")
@@ -20,6 +18,9 @@ argparser.add_argument('--layers', type=int, default=2)
 argparser.add_argument('--momentum', type=float, default=0.9)
 argparser.add_argument('--save_every', type=int, default=50)
 argparser.add_argument('--data_directory', type=str, default="fma_small_wav/015/electronic_noises/")
+argparser.add_argument('--log_directory', type=str, default="test_model/")
+argparser.add_argument('--max_checkpoints', type=int, default=100)
+argparser.add_argument('--checkpoint_every', type=int, default=100)
 args = argparser.parse_args()
 
 
@@ -33,7 +34,20 @@ def train(model, inputs, targets):
         loss, _ = model.sess.run([model.cost, model.train_step], feed_dict=feed_dictionary)
         losses.append(loss)
         print loss
+        if i % args.checkpoint_every == 0:
+            save(saver, model.sess, i)
 
+def save(saver, sess, step):
+    model_name = args.model_name
+    checkpoint_path = os.path.join("basic_wavenet_log/" + args.log_directory, model_name)
+    print('Storing checkpoint to {} ...'.format(args.log_directory))
+    sys.stdout.flush()
+
+    if not os.path.exists(args.log_directory):
+        os.makedirs(args.log_directory)
+
+    saver.save(sess, checkpoint_path, global_step=step)
+    print(' Done.')
 
 def make_dataset(data_directory):
     inputs = []
@@ -65,9 +79,20 @@ if __name__ == "__main__":
     num_time_samples = inputs[0].shape[1]
     num_channels = 1
     gpu_fraction = 1.0
+
+
+    # Set up logging for TensorBoard.
+    writer = tf.summary.FileWriter(args.log_directory)
+    writer.add_graph(tf.get_default_graph())
+    run_metadata = tf.RunMetadata()
+    summaries = tf.summary.merge_all()
+
     x_placeholder = tf.placeholder(tf.float32,
-                            shape=(None, num_time_samples, num_channels))
+                             shape=(None, num_time_samples, num_channels))
     y_placeholder = tf.placeholder(tf.int32, [None, num_time_samples])
-    wavenet = BasicWavenet(x_placeholder, y_placeholder,
-                           num_time_samples=num_time_samples)
-    train(wavenet, inputs, targets)
+    wavenet = BasicWavenet(x_placeholder, y_placeholder)
+    saver = tf.train.Saver(var_list=tf.trainable_variables(), max_to_keep=args.max_checkpoints)
+    try:
+        train(wavenet, inputs, targets)
+    except KeyboardInterrupt:
+        pass
