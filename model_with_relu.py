@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from .ops import causal_conv, mu_law_encode
-
+ALPHA = 0.01
 
 def create_variable(name, shape):
     '''Create a convolution filter variable with the specified name and shape,
@@ -439,7 +439,7 @@ class WaveNetModel(object):
             transformed1 = relu(total, ALPHA, name=scope.name)
             conv1 = tf.nn.conv1d(transformed1, w1, stride=1, padding="SAME")
             if self.use_biases:
-                conv1 = tf.add(conv1, b1)    
+                conv1 = tf.add(conv1, b1)
             #transformed2 = tf.nn.relu(conv1)
             transformed2 = relu(conv1, ALPHA, name=scope.name)
             conv2 = tf.nn.conv1d(transformed2, w2, stride=1, padding="SAME")
@@ -690,26 +690,26 @@ class WaveNetModel(object):
 
                     return total_loss
 
-    def relu(x, alpha=0., name=None, max_value=None):
-        '''Rectified linear unit
-        # Arguments
-        alpha: slope of negative section.
-        max_value: saturation threshold.
-        '''
-        if alpha != 0.:
-            negative_part = tf.nn.relu(-x)
-            x = tf.nn.relu(x, name)
-        if max_value is not None:
-            max_value = _to_tensor(max_value, x.dtype.base_dtype)
-            zero = _to_tensor(0., x.dtype.base_dtype)
-            x = tf.clip_by_value(x, zero, max_value)
-        if alpha != 0.:
-            alpha = _to_tensor(alpha, x.dtype.base_dtype)
-            x -= alpha * negative_part
-        return x
+def relu(x, alpha=0., name=None, max_value=None):
+    '''Rectified linear unit
+    # Arguments
+    alpha: slope of negative section.
+    max_value: saturation threshold.
+    '''
+    if alpha != 0.:
+        negative_part = tf.nn.relu(-x)
+        x = tf.nn.relu(x, name)
+    if max_value is not None:
+        max_value = _to_tensor(max_value, x.dtype.base_dtype)
+        zero = _to_tensor(0., x.dtype.base_dtype)
+        x = tf.clip_by_value(x, zero, max_value)
+    if alpha != 0.:
+        alpha = _to_tensor(alpha, x.dtype.base_dtype)
+        x -= alpha * negative_part
+    return x
 
-    def _to_tensor(x, dtype):
-        x = tf.convert_to_tensor(x)
-        if x.dtype != dtype:
-            x = tf.cast(x, dtype)
-        return x
+def _to_tensor(x, dtype):
+    x = tf.convert_to_tensor(x)
+    if x.dtype != dtype:
+        x = tf.cast(x, dtype)
+    return x
