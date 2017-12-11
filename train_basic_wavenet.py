@@ -15,6 +15,7 @@ argparser.add_argument('--model', type=str, default="simple-wavenet")
 argparser.add_argument('--learning_rate', type=float, default=1e-5)
 argparser.add_argument('--iterations', type=int, default=10000)
 argparser.add_argument('--layers', type=int, default=2)
+argparser.add_argument('--hidden_size', type=int, default=128)
 argparser.add_argument('--momentum', type=float, default=0.9)
 argparser.add_argument('--save_every', type=int, default=50)
 argparser.add_argument('--data_directory', type=str, default="fma_small_wav/015/electronic_noises/")
@@ -80,7 +81,6 @@ if __name__ == "__main__":
     num_channels = 1
     gpu_fraction = 1.0
 
-
     # Set up logging for TensorBoard.
     writer = tf.summary.FileWriter(args.log_directory)
     writer.add_graph(tf.get_default_graph())
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     x_placeholder = tf.placeholder(tf.float32,
                              shape=(None, num_time_samples, num_channels))
     y_placeholder = tf.placeholder(tf.int32, [None, num_time_samples])
-    wavenet = BasicWavenet(x_placeholder, y_placeholder)
+    wavenet = BasicWavenet(x_placeholder, y_placeholder, num_layers=args.layers, num_hidden=args.hidden_size)
     saver = tf.train.Saver(var_list=tf.trainable_variables(), max_to_keep=args.max_checkpoints)
     try:
         train(wavenet, inputs, targets)
