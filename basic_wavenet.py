@@ -83,7 +83,7 @@ class BasicWavenet(object):
 
         padded_width = int(rate * np.ceil((width + rate) * 1.0 / rate))
         pad_left = padded_width - width
-        new_shape = (padded_width / rate, -1, num_channels)
+        new_shape = (int(padded_width / rate), -1, num_channels)
         padded = tf.pad(inputs, [[0, 0], [pad_left, 0], [0, 0]])
         transposed = tf.transpose(padded, permutation)
         reshaped = tf.reshape(transposed, new_shape)
@@ -159,5 +159,3 @@ class BasicWavenet(object):
             outputs.set_shape(tf.TensorShape(tensor_shape))
 
         return outputs
-
-
