@@ -416,7 +416,7 @@ class WaveNetModel(object):
                         global_condition_batch, output_width)
                     outputs.append(output)
 
-        with tf.name_scope('postprocessing'):
+        with tf.name_scope('postprocessing') as scope_name:
             # Perform (+) -> ReLU -> 1x1 conv -> ReLU -> 1x1 conv to
             # postprocess the output.
             w1 = self.variables['postprocessing']['postprocess1']
@@ -436,12 +436,12 @@ class WaveNetModel(object):
             # all up here.
             total = sum(outputs)
             #transformed1 = tf.nn.relu(total)
-            transformed1 = relu(total, ALPHA, name=scope.name)
+            transformed1 = relu(total, ALPHA, name=scope_name)
             conv1 = tf.nn.conv1d(transformed1, w1, stride=1, padding="SAME")
             if self.use_biases:
                 conv1 = tf.add(conv1, b1)
             #transformed2 = tf.nn.relu(conv1)
-            transformed2 = relu(conv1, ALPHA, name=scope.name)
+            transformed2 = relu(conv1, ALPHA, name=scope_name)
             conv2 = tf.nn.conv1d(transformed2, w2, stride=1, padding="SAME")
             if self.use_biases:
                 conv2 = tf.add(conv2, b2)
@@ -495,7 +495,7 @@ class WaveNetModel(object):
         self.init_ops = init_ops
         self.push_ops = push_ops
 
-        with tf.name_scope('postprocessing'):
+        with tf.name_scope('postprocessing') as scope_name:
             variables = self.variables['postprocessing']
             # Perform (+) -> ReLU -> 1x1 conv -> ReLU -> 1x1 conv to
             # postprocess the output.
@@ -509,13 +509,13 @@ class WaveNetModel(object):
             # all up here.
             total = sum(outputs)
             #transformed1 = tf.nn.relu(total)
-            transformed1 = relu(total, ALPHA, name=scope.name)
+            transformed1 = relu(total, ALPHA, name=scope_name)
 
             conv1 = tf.matmul(transformed1, w1[0, :, :])
             if self.use_biases:
                 conv1 = conv1 + b1
             #transformed2 = tf.nn.relu(conv1)
-            transformed2 = relu(conv1, ALPHA, name=scope.name)
+            transformed2 = relu(conv1, ALPHA, name=scope_name)
             conv2 = tf.matmul(transformed2, w2[0, :, :])
             if self.use_biases:
                 conv2 = conv2 + b2
@@ -698,7 +698,7 @@ def relu(x, alpha=0., name=None, max_value=None):
     '''
     if alpha != 0.:
         negative_part = tf.nn.relu(-x)
-        x = tf.nn.relu(x, name)
+        x = tf.nn.relu(x, name + "_leaky_relu")
     if max_value is not None:
         max_value = _to_tensor(max_value, x.dtype.base_dtype)
         zero = _to_tensor(0., x.dtype.base_dtype)
