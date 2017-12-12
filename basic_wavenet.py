@@ -8,11 +8,13 @@ import math
 #################################
 
 class BasicWavenet(object):
-    def __init__(self, x_placeholder, y_placeholder,
+    def __init__(self, x_placeholder, y_placeholder, log_directory,
                  num_classes=256,
                  num_layers=2,
                  num_hidden=128,
                  ):
+
+
 
         inputs = x_placeholder
         targets = y_placeholder
@@ -58,12 +60,21 @@ class BasicWavenet(object):
             logits=outputs, labels=targets)
         cost = tf.reduce_mean(costs)
 
+
         train_step = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost)
 
         gpu_options = tf.GPUOptions(
             per_process_gpu_memory_fraction=1.0)
         sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False))
         sess.run(tf.initialize_all_variables())
+
+        self.writer = tf.summary.FileWriter(log_directory, sess.graph)
+        self.writer.add_graph(tf.get_default_graph())
+        self.run_metadata = tf.RunMetadata()
+        self.training_summary = tf.summary.scalar("training_accuracy", cost)
+        self.summaries = tf.summary.merge_all()
+
+        saver = tf.train.Saver(var_list=tf.trainable_variables())
 
         self.inputs = inputs
         self.targets = targets
@@ -73,6 +84,9 @@ class BasicWavenet(object):
         self.cost = cost
         self.train_step = train_step
         self.sess = sess
+        self.saver = saver
+
+
 
 
     def transform_convolution(self, inputs, rate):
