@@ -1,4 +1,4 @@
-# MusicGenerationWithGANs
+# LAWaveNet
 
 Final Project for 6.867: Machine Learning
 
