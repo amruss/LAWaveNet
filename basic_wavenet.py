@@ -14,8 +14,6 @@ class BasicWavenet(object):
                  num_hidden=128,
                  ):
 
-
-
         inputs = x_placeholder
         targets = y_placeholder
 
@@ -87,11 +85,8 @@ class BasicWavenet(object):
         self.saver = saver
 
 
-
-
     def transform_convolution(self, inputs, rate):
-        ''' reshapes input for dilated convolutions
-        '''
+        ''' reshapes input for dilated convolutions'''
         permutation = (1, 0, 2)
         _, width, num_channels = inputs.get_shape().as_list()
 
@@ -127,6 +122,7 @@ class BasicWavenet(object):
                padding='VALID',
                gain=np.sqrt(2),
                activation=tf.nn.relu,
+               bias=True
                ):
         in_channels = inputs.get_shape().as_list()[-1]
         w_init = tf.contrib.layers.xavier_initializer_conv2d()
@@ -141,6 +137,14 @@ class BasicWavenet(object):
                                data_format='NHWC')
 
         outputs = activation(layer_outputs)
+
+        if bias:
+            b_init = tf.constant_initializer(0.0)
+            b = tf.get_variable(name='b',
+                                shape=(out_channels,),
+                                initializer=b_init)
+
+            outputs = outputs + tf.expand_dims(tf.expand_dims(b, 0), 0)
 
         return outputs
 

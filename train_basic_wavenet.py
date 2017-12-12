@@ -19,31 +19,36 @@ argparser.add_argument('--hidden_size', type=int, default=128)
 argparser.add_argument('--momentum', type=float, default=0.9)
 argparser.add_argument('--save_every', type=int, default=50)
 argparser.add_argument('--data_directory', type=str, default="fma_small_wav/015/electronic_noises/")
-argparser.add_argument('--log_directory', type=str, default="test_model/")
-argparser.add_argument('--max_checkpoints', type=int, default=100)
-argparser.add_argument('--checkpoint_every', type=int, default=100)
+argparser.add_argument('--log_directory', type=str, default="test_model3/")
+argparser.add_argument('--checkpoint_every', type=int, default=3)
 argparser.add_argument('--num_time_samples', type=int, default=1000000)
 args = argparser.parse_args()
 
 
+
 def train(model, inputs, targets):
+
     losses = []
+
     for i in tqdm(range(args.iterations)):
         index = i % len(inputs)
         input = inputs[index]
         target = targets[index]
         feed_dictionary = {model.inputs: input, model.targets: target}
-        loss, _ = model.sess.run([model.cost, model.train_step], feed_dict=feed_dictionary)
+        loss, _, summ = model.sess.run([model.cost, model.train_step, model.summaries], run_metadata=model.run_metadata, feed_dict=feed_dictionary)
         losses.append(loss)
-        print loss
+        model.writer.add_run_metadata(model.run_metadata, 'step_{:04d}'.format(i))
+        model.writer.add_summary(summ, i)
         if i % args.checkpoint_every == 0:
-            save(saver, model.sess, i)
+            print(loss)
+            save(model.saver, model.sess, i)
 
 def save(saver, sess, step):
     model_name = args.model_name
-    checkpoint_path = os.path.join("basic_wavenet_log/" + args.log_directory, model_name)
+    checkpoint_path = os.path.join(args.log_directory, model_name)
     print('Storing checkpoint to {} ...'.format(args.log_directory))
     sys.stdout.flush()
+
 
     if not os.path.exists(args.log_directory):
         os.makedirs(args.log_directory)
@@ -60,7 +65,7 @@ def make_dataset(data_directory):
             continue
 
         # Read File
-        print "Adding data for " + data_directory + filename
+        print("Adding data for " + data_directory + filename)
         data = wavfile.read(data_directory + filename)[1][:, 0]
 
         # Normalize the data
@@ -82,21 +87,14 @@ def make_dataset(data_directory):
 if __name__ == "__main__":
     inputs, targets = make_dataset(args.data_directory)
     num_time_samples = inputs[0].shape[1]
-    print num_time_samples
     num_channels = 1
     gpu_fraction = 1.0
 
-    # Set up logging for TensorBoard.
-    writer = tf.summary.FileWriter(args.log_directory)
-    writer.add_graph(tf.get_default_graph())
-    run_metadata = tf.RunMetadata()
-    summaries = tf.summary.merge_all()
 
     x_placeholder = tf.placeholder(tf.float32,
                              shape=(None, num_time_samples, num_channels))
     y_placeholder = tf.placeholder(tf.int32, [None, num_time_samples])
-    wavenet = BasicWavenet(x_placeholder, y_placeholder, num_layers=args.layers, num_hidden=args.hidden_size)
-    saver = tf.train.Saver(var_list=tf.trainable_variables(), max_to_keep=args.max_checkpoints)
+    wavenet = BasicWavenet(x_placeholder, y_placeholder, args.log_directory, num_layers=args.layers, num_hidden=args.hidden_size)
     try:
         train(wavenet, inputs, targets)
     except KeyboardInterrupt:
