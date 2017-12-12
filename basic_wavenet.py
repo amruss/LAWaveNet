@@ -75,6 +75,9 @@ class BasicWavenet(object):
         saver = tf.train.Saver(var_list=tf.trainable_variables())
 
         self.inputs = inputs
+        self.num_layers = num_layers
+        self.num_hidden = num_hidden
+        self.num_classes = num_classes
         self.targets = targets
         self.outputs = outputs
         self.hs = layers
@@ -130,6 +133,7 @@ class BasicWavenet(object):
                             shape=(filter_width, in_channels, out_channels),
                             initializer=w_init)
 
+        scope =  tf.get_variable_scope()
         layer_outputs = tf.nn.conv1d(inputs,
                                w,
                                stride=stride,
@@ -177,3 +181,6 @@ class BasicWavenet(object):
             outputs.set_shape(tf.TensorShape(tensor_shape))
 
         return outputs
+
+
+
