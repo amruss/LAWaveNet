@@ -81,7 +81,7 @@ class Generator(object):
 
             if step % 1000 == 0:
                 predictions_ = np.concatenate(predictions, axis=1)
-                librosa.output.write_wav(predictions_, wav_filename, 44100)
+                librosa.output.write_wav(wav_filename, predictions_.T, 44100)
                 print('Updated wav file at '.format(wav_filename))
 
         predictions_ = np.concatenate(predictions, axis=1)
@@ -106,4 +106,3 @@ if __name__ == "__main__":
         if not ('state_buffer' in var.name or 'pointer' in var.name)}
 
     saver = tf.train.Saver(variables_to_restore)
-
