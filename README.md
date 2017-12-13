@@ -12,6 +12,7 @@ Each of the files and their uses are described below.
 | setup.sh | Setup scrit to run on AWS GPU to setup the server and install relvant libraries. |
 | basic_wavenet.py | Model file for creating our implementation of wavenet. |
 |train_basic_wavenet.py |  Training file for our implementation of wavenet. |
+|basic_generator.py | File to generate audio for our implementation of wavenet. |
 | model_with_experiments\train_with_dropout.py | Replace train.py with this to train with dropout. |
 | model_with_experiments\model_with_leaky_relu.py | Replace model.py with this to train with leaky relu. |
 | model_with_experiments\train_with_gradient_clipping.py | Replace train.py with this to train with gradient clipping.
